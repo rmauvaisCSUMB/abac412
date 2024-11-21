@@ -1,4 +1,7 @@
-
+# ABAC Policy Assignment 4
+# CST 412
+# Cao Thang Bui
+# Members: Ryan Mauvais, Andre Manzo, Landon Wivell, Luis Edeza
 
 
 import re
