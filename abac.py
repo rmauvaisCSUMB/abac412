@@ -2,7 +2,7 @@
 # CST 412
 # Cao Thang Bui
 # Members: Ryan Mauvais, Andre Manzo, Landon Wivell, Luis Edeza
-
+#Test
 
 import re
 import matplotlib.pyplot as plt
@@ -150,7 +150,7 @@ def menu():
         elif choice == '3':
             policy_coverage_analysis()
         elif choice == '4':
-            print("Exiting program.")
+            print("Exiting program...")
             break
         else:
             print("Invalid choice. Please select again.")
