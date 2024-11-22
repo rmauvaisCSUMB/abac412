@@ -2,13 +2,16 @@
 # CST 412
 # Cao Thang Bui
 # Members: Ryan Mauvais, Andre Manzo, Landon Wivell, Luis Edeza
-#Test
 
 import re
 import matplotlib.pyplot as plt
 from collections import defaultdict
+
+
 # ABAC policies data structure
 ABAC = []
+
+
 # Function to parse attribute strings into a dictionary
 def parse_attributes(attribute_string):
     """Parses the attribute string into a dictionary."""
@@ -21,6 +24,8 @@ def parse_attributes(attribute_string):
         else:
             attributes[attr.strip()] = True  # For boolean flags like isChair=true
     return attributes
+
+
 def parse_value(value):
     """Parses attribute values into appropriate types."""
     if value.startswith("{") and value.endswith("}"):
@@ -30,6 +35,8 @@ def parse_value(value):
     elif value.lower() in ["true", "false"]:
         return value.lower() == "true"  # Convert to boolean
     return value  # Leave as string
+
+
 # Function to load ABAC policies from a file
 def load_abac(file_path):
     global ABAC
@@ -55,6 +62,8 @@ def load_abac(file_path):
                     condition, action = match.groups()
                     ABAC.append({"type": "rule", "condition": condition, "action": action})
     print(f"Loaded ABAC policies from {file_path}.")
+
+
 # Function to evaluate a single request
 def evaluate_request(sub_id, res_id, action):
     user_attrs = {}
@@ -77,6 +86,8 @@ def evaluate_request(sub_id, res_id, action):
                 print(f"Error evaluating condition: {condition}. Error: {e}")
                 return "DENY"
     return "DENY"
+
+
 # Function to evaluate requests from a file
 def evaluate_requests(file_path):
     with open(file_path, 'r') as file:
@@ -84,6 +95,8 @@ def evaluate_requests(file_path):
             sub_id, res_id, action = line.strip().split(',')
             result = evaluate_request(sub_id, res_id, action)
             print(f"{sub_id},{res_id},{action}: {result}")
+
+
 # Function for policy coverage analysis
 def policy_coverage_analysis():
     rule_coverage = defaultdict(int)
@@ -107,24 +120,34 @@ def policy_coverage_analysis():
                                     attribute_coverage[idx].update(res_attrs.keys())
                             except Exception as e:
                                 print(f"Error evaluating rule {idx}: {condition}. Error: {e}")
+
+
     # Debugging: print the coverage data
     print("\nRule Coverage Data:")
     for idx, coverage in rule_coverage.items():
         print(f"Rule {idx + 1}: {coverage} authorizations covered.")
+
+
     # Debugging: print the attributes covered for each rule
     print("\nAttribute Coverage Data:")
     for idx, attributes in attribute_coverage.items():
         print(f"Rule {idx + 1} covers attributes: {attributes}")
     # Prepare the heatmap data
+
+
     rules = [f"Rule {i + 1}" for i in range(len(ABAC)) if ABAC[i]["type"] == "rule"]
     attributes = sorted(set(attr for attrs in attribute_coverage.values() for attr in attrs))
     heatmap_data = [[1 if attr in attribute_coverage[i] else 0 for attr in attributes] for i in range(len(rules))]
+
+
     # Debugging: print the heatmap data matrix
     print("\nHeatmap Data Matrix:")
     print(heatmap_data)
     if not heatmap_data or not any(heatmap_data):
         print("No data available to generate a heatmap. Ensure the ABAC policies and attributes are loaded correctly.")
         return
+    
+
     # Plot the heatmap
     plt.figure(figsize=(10, 8))
     plt.imshow(heatmap_data, cmap='Blues', interpolation='nearest')
@@ -133,6 +156,8 @@ def policy_coverage_analysis():
     plt.colorbar(label='Attribute Coverage Intensity')
     plt.title('Policy Coverage Heatmap')
     plt.show()
+
+    
 # Main menu function
 def menu():
     while True:
