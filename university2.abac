@@ -1,0 +1,57 @@
+# ABAC policy for a university.
+
+# Note that the two words "user" and "subject" are used interchangeably in this document.
+
+# User Attributes
+userAttrib(applicant1, position=applicant)
+userAttrib(applicant2, position=applicant)
+
+userAttrib(csStu1, position=student, department=cs, crsTaken={cs101})
+userAttrib(csStu2, position=student, department=cs, crsTaken={cs601}, crsTaught={cs101, cs602})
+userAttrib(csStu3, position=student, department=cs, crsTaken={cs602}, crsTaught={cs601})
+userAttrib(csStu4, position=student, department=cs, crsTaken={cs601})
+userAttrib(csStu5, position=student, department=cs, crsTaken={cs601, cs602})
+
+userAttrib(eeStu1, position=student, department=ee, crsTaken={ee101})
+userAttrib(eeStu2, position=student, department=ee, crsTaken={ee601}, crsTaught={ee101, ee602})
+userAttrib(eeStu3, position=student, department=ee, crsTaken={ee602}, crsTaught={ee601})
+userAttrib(eeStu4, position=student, department=ee, crsTaken={ee601})
+userAttrib(eeStu5, position=student, department=ee, crsTaken={ee601, ee602})
+
+userAttrib(csFac1, position=faculty, department=cs, crsTaught={cs101})
+userAttrib(csFac2, position=faculty, department=cs, crsTaught={cs601})
+userAttrib(csChair, isChair=true, department=cs)
+
+userAttrib(eeFac1, position=faculty, department=ee, crsTaught={ee101})
+userAttrib(eeFac2, position=faculty, department=ee, crsTaught={ee601})
+userAttrib(eeChair, isChair=true, department=ee)
+
+userAttrib(registrar1, position=staff, department=registrar)
+userAttrib(registrar2, position=staff, department=registrar)
+
+userAttrib(admissions1, position=staff, department=admissions)
+userAttrib(admissions2, position=staff, department=admissions)
+
+# Resource Attributes
+resourceAttrib(application1, type=application, student=applicant1)
+resourceAttrib(application2, type=application, student=applicant2)
+
+resourceAttrib(cs101gradebook, departments={cs}, crs=cs101, type=gradebook)
+resourceAttrib(cs601gradebook, departments={cs}, crs=cs601, type=gradebook)
+resourceAttrib(cs602gradebook, departments={cs}, crs=cs602, type=gradebook)
+
+resourceAttrib(cs101roster, departments={cs}, crs=cs101, type=roster)
+resourceAttrib(cs601roster, departments={cs}, crs=cs601, type=roster)
+resourceAttrib(cs602roster, departments={cs}, crs=cs602, type=roster)
+
+# Rules
+rule(type [ {gradebook}; {readMyScores} ]; crsTaken)
+rule(type [ {gradebook}; {addScore, readScore} ]; crsTaught)
+rule(position [ {faculty} ]; type [ {gradebook}; {changeScore, assignGrade} ]; crsTaught)
+rule(department [ {registrar} ]; type [ {roster}; {read, write} ])
+rule(position [ {faculty} ]; type [ {roster}; {read} ]; crsTaught)
+rule(type [ {transcript}; {read} ]; uid=student)
+rule(isChair [ {true} ]; type [ {transcript}; {read} ]; department)
+rule(department [ {registrar} ]; type [ {transcript}; {read} ])
+rule(type [ {application}; {checkStatus} ]; uid=student)
+rule(department [ {admissions} ]; type [ {application}; {read, setStatus} ])
