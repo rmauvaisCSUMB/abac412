@@ -175,7 +175,6 @@ def load_abac(file_path):
                 if ';' in rule_content:
                     parts = rule_content.split(';')
                     if len(parts) != 4:
-                        print(f"Error parsing rule at line {line_num}: {line}")
                         continue
                     # Extract subject conditions, resource conditions, actions, and constraints
                     sub_cond, res_cond, acts, cons = map(str.strip, parts)
