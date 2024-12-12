@@ -9,6 +9,7 @@ import re
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+import pandas as pd
 from collections import defaultdict
 
 # Global list to store ABAC policies
@@ -17,10 +18,8 @@ ABAC = []
 def parse_attributes(attribute_string):
     """
     Parses a string of attributes into a dictionary.
-
     Parameters:
         attribute_string (str): A string representing attributes, e.g., 'role=admin, level=5'
-
     Returns:
         dict: A dictionary of attributes with their parsed values.
     """
@@ -36,10 +35,8 @@ def parse_attributes(attribute_string):
 def parse_value(value):
     """
     Parses a value string into its appropriate type.
-
     Parameters:
         value (str): The value to parse, possibly a set in braces.
-
     Returns:
         list or str: A list if the value represents a set, or a string otherwise.
     """
@@ -54,11 +51,9 @@ def parse_value(value):
 def parse_conditions(cond_string):
     """
     Parses a string of conditions into a list of condition dictionaries.
-
     Parameters:
         cond_string (str): The condition string, e.g.,
             'position [ {manager director}, department ] sales'
-
     Returns:
         list: A list of condition dictionaries with keys 'type', 'attr', and other relevant keys.
     """
@@ -88,10 +83,8 @@ def parse_conditions(cond_string):
 def parse_actions(acts_string):
     """
     Parses an actions string into a list of actions.
-
     Parameters:
         acts_string (str): The actions string, e.g., '{read write}' or 'delete'
-
     Returns:
         list: A list of action strings.
     """
@@ -106,10 +99,8 @@ def parse_actions(acts_string):
 def parse_constraints(cons_string):
     """
     Parses a string of constraints into a list of constraint dictionaries.
-
     Parameters:
         cons_string (str): The constraints string, e.g., 'aum > arm, aus = ars'
-
     Returns:
         list: A list of constraint dictionaries with 'type', 'left', 'right' keys.
     """
@@ -141,10 +132,8 @@ def parse_constraints(cons_string):
 def load_abac(file_path):
     """
     Loads ABAC policies from a policy file into the global ABAC list.
-
     Parameters:
         file_path (str): The path to the policy file.
-
     The policy file can contain:
         - userAttrib(user_id, attributes)
         - resourceAttrib(resource_id, attributes)
@@ -205,11 +194,9 @@ def load_abac(file_path):
 def evaluate_conditions(conditions, attrs):
     """
     Evaluates a list of conditions against the provided attributes.
-
     Parameters:
         conditions (list): A list of condition dictionaries.
         attrs (dict): The attributes to evaluate against.
-
     Returns:
         bool: True if all conditions are satisfied, False otherwise.
     """
@@ -231,12 +218,10 @@ def evaluate_conditions(conditions, attrs):
 def evaluate_constraints(constraints, sub_attrs, res_attrs):
     """
     Evaluates a list of constraints between subject and resource attributes.
-
     Parameters:
         constraints (list): A list of constraint dictionaries.
         sub_attrs (dict): Subject attributes.
         res_attrs (dict): Resource attributes.
-
     Returns:
         bool: True if all constraints are satisfied, False otherwise.
     """
@@ -278,12 +263,10 @@ def evaluate_constraints(constraints, sub_attrs, res_attrs):
 def evaluate_request(sub_id, res_id, action):
     """
     Evaluates if a request is permitted based on the loaded policies.
-
     Parameters:
         sub_id (str): Subject (user) identifier.
         res_id (str): Resource identifier.
         action (str): Action requested.
-
     Returns:
         str: "Permit" if access is allowed, "Deny" otherwise.
     """
@@ -326,11 +309,9 @@ def evaluate_request(sub_id, res_id, action):
 def evaluate_requests(policy_file, request_file):
     """
     Evaluates access requests from a request file using the policies from a policy file.
-
     Parameters:
         policy_file (str): Path to the policy file.
         request_file (str): Path to the request file.
-
     The request file should contain lines in the format:
         sub_id,res_id,action
     """
@@ -353,7 +334,6 @@ def policy_coverage_analysis(policy_file):
     """
     Performs policy coverage analysis by generating a heatmap showing
     which user positions have access to which actions.
-
     Parameters:
         policy_file (str): Path to the policy file.
     """
@@ -464,8 +444,69 @@ def policy_coverage_analysis(policy_file):
 #     plt.tight_layout()
 #     plt.show()
 
-if __name__ == "__main__":
-    # Set up command-line argument parsing
+def process_healthcare_abac(file_path):
+    with open(file_path, 'r') as file:
+        data = file.read()
+
+    # Extract atomic conditions
+    atomic_conditions = re.findall(r"#\s+(\w+):", data)
+
+    # Extract rules
+    rule_pattern = re.compile(r"rule\((.*?\))", re.DOTALL)
+    rules = rule_pattern.findall(data)
+
+    # Deduplicate and sort
+    atomic_conditions = sorted(set(atomic_conditions))
+    rules = sorted(set(rules))
+
+    return atomic_conditions, rules
+
+def process_university_abac(file_path):
+    with open(file_path, 'r') as file:
+        data = file.read()
+
+    # Extract user and resource attributes
+    user_attributes = re.findall(r"userAttrib\([^,]+,\s*([^)]+)\)", data)
+    resource_attributes = re.findall(r"resourceAttrib\([^,]+,\s*([^)]+)\)", data)
+
+    # Combine attributes into a single list
+    attributes = []
+    for attr_list in user_attributes + resource_attributes:
+        attributes.extend(re.findall(r"(\w+)=\{?[^\s}]+", attr_list))  # Match attribute names
+
+    # Extract rules
+    rule_pattern = re.compile(r"rule\((.*?\))", re.DOTALL)
+    rules = rule_pattern.findall(data)
+
+    # Deduplicate and sort
+    attributes = sorted(set(attributes))
+    rules = sorted(set(rules))
+
+    return attributes, rules
+
+def generate_heatmap_matrix(rules, attributes):
+    heatmap_data = pd.DataFrame(0, index=rules, columns=attributes)
+    # analyze rules for attributes
+    for rule in rules:
+        for attribute in attributes:
+            if attribute.lower() in rule.lower():  # Case-insensitive match
+                heatmap_data.at[rule, attribute] += 1
+
+    return heatmap_data
+
+def plot_save_heatmap(data, filename = 'heatmap.png'):
+    plt.figure(figsize=(12, 8))
+    sns.heatmap(data, annot=True, cmap="YlGnBu", fmt="d")
+    plt.title("Policy Coverage Heatmap")
+    plt.xlabel("Attributes")
+    plt.ylabel("Rules")
+    plt.xticks(rotation=45, ha="right")
+    plt.tight_layout()
+    plt.show()
+    plt.savefig(filename, dpi=300, bbox_inches="tight")
+
+def main():
+    # command-line argument parsing
     parser = argparse.ArgumentParser(description="ABAC Framework Driver Program")
     parser.add_argument("-e", nargs=2, metavar=('policy_file', 'request_file'),
                         help="Evaluate requests: specify the policy file and request file")
@@ -475,16 +516,36 @@ if __name__ == "__main__":
                         help="Analyze resource access patterns: specify the policy file")
     args = parser.parse_args()
 
-    # Determine which action to perform based on arguments
     if args.e:
-        # Evaluate requests
+        # evaluate requests
         evaluate_requests(args.e[0], args.e[1])
+
     elif args.a:
-        # Perform policy coverage analysis
-        policy_coverage_analysis(args.a)
+            file_path = args.a
+            if "healthcare" in file_path.lower():
+                processing_function = process_healthcare_abac
+                output_filename = "healthcare_heatmap.png"
+            elif "university" in file_path.lower():
+                processing_function = process_university_abac
+                output_filename = "university_heatmap.png"
+            else:
+                print("Error: Unsupported ABAC policy file. Ensure the file name includes 'healthcare' or 'university'.")
+                exit(1)
+        # process  selected file
+            attributes, rules = processing_function(file_path)
+        # generate  heatmap matrix
+            heatmap_matrix = generate_heatmap_matrix(rules, attributes)
+        # plot the heatmap
+            if not heatmap_matrix.empty:
+                plot_save_heatmap(heatmap_matrix, filename=output_filename)
+                print(f"Heatmap saved as '{output_filename}'.")
+            else:
+                print("Error: Heatmap matrix is empty. Ensure rules and attributes are extracted correctly.")
     elif args.b:
-        # Analyze resource access patterns
+        # bar chart
         analyze_resource_access_patterns(args.b)
     else:
-        # No valid option provided
         print("Invalid option. Use -h for help.")
+
+if __name__ == "__main__":
+    main()
